@@ -25,7 +25,6 @@ public class JvnObjectImpl implements JvnObject{
 			state = State.R;
 			break;
 		case WC:
-			obj = localServer.jvnLockRead(id);
 			state = State.RWC;
 			break;
 		default:
@@ -62,7 +61,11 @@ public class JvnObjectImpl implements JvnObject{
 	public Serializable jvnGetObjectState() throws JvnException {
 		return obj;
 	}
-
+	
+	public void jvnSetObjectState(Serializable obj) {
+		this.obj = obj;
+	}
+	
 	@Override
 	public void jvnInvalidateReader() throws JvnException {
 		state = State.NL;
@@ -89,6 +92,16 @@ public class JvnObjectImpl implements JvnObject{
 
 	public void setLocalServer(JvnLocalServer localServer) {
 		this.localServer = localServer;
+	}
+
+	@Override
+	public boolean isStateRead() {
+		return (state == State.R || state == State.RC);
+	}
+
+	@Override
+	public boolean isStateWrite() {
+		return (state == State.W || state == State.WC || state == State.RWC);
 	}
 
 }

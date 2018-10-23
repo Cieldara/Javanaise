@@ -80,5 +80,11 @@ public interface JvnObject extends Serializable {
      */
     public Serializable jvnInvalidateWriterForReader() throws jvn.JvnException;
     
+    public void jvnSetObjectState(Serializable obj);
+    
     public void setLocalServer(JvnLocalServer localServer);
+    
+    public boolean isStateRead();
+    
+    public boolean isStateWrite();
 }

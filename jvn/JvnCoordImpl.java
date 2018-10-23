@@ -82,8 +82,13 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *
      */
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-    	
-        return objects.get(joi).jvnGetObjectState();
+    	JvnObject obj = objects.get(joi);
+    	Serializable ret = obj.jvnGetObjectState();
+    	if (obj.isStateWrite()){
+    		ret = obj.jvnInvalidateWriterForReader();
+    		obj.jvnSetObjectState(ret);
+    	}
+        return ret;
     }
 
     /**
@@ -96,8 +101,16 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *
      */
     public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        // to be completed
-        return objects.get(joi).jvnGetObjectState();
+    	JvnObject obj = objects.get(joi);
+    	Serializable ret = obj.jvnGetObjectState();
+    	if (obj.isStateWrite()){
+    		ret = obj.jvnInvalidateWriter();
+    		obj.jvnSetObjectState(ret);
+    	}
+    	if (obj.isStateRead()){
+    		obj.jvnInvalidateReader();
+    	}
+        return ret;
     }
 
     /**
