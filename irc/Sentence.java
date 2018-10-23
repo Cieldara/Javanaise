@@ -12,7 +12,7 @@ public class Sentence implements java.io.Serializable {
     String data;
 
     public Sentence() {
-        data = new String("");
+        data = new String("Toto");
     }
 
     public void write(String text) {
@@ -22,5 +22,8 @@ public class Sentence implements java.io.Serializable {
     public String read() {
         return data;
     }
-
+    @Override
+    public String toString(){
+        return data;
+    }
 }

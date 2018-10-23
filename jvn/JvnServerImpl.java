@@ -27,17 +27,17 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * Default constructor
      *
      * @throws JvnException
-  *
+     *
      */
     private JvnServerImpl() throws Exception {
-    	super();
-    	Registry registry = LocateRegistry.getRegistry(1099); 
-    	try {
-			coord = (JvnRemoteCoord) registry.lookup("RemoteCoord");
-		} catch (RemoteException | NotBoundException e) {
-			e.printStackTrace();
-		}
-    	objects = new HashMap<Integer, JvnObject>();
+        super();
+        Registry registry = LocateRegistry.getRegistry(1099);
+        try {
+            coord = (JvnRemoteCoord) registry.lookup("RemoteCoord");
+        } catch (RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
+        objects = new HashMap<Integer, JvnObject>();
     }
 
     /**
@@ -45,7 +45,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * instance
      *
      * @throws JvnException
-    *
+     *
      */
     public static JvnServerImpl jvnGetServer() {
         if (js == null) {
@@ -62,14 +62,14 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * The JVN service is not used anymore
      *
      * @throws JvnException
-	*
+     *
      */
     public void jvnTerminate() throws jvn.JvnException {
-    	try {
-			coord.jvnTerminate(this);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
+        try {
+            coord.jvnTerminate(this);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -77,13 +77,12 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      *
      * @param o : the JVN object state
      * @throws JvnException
-	*
+     *
      */
-    
     //TODO Decide Id (récupérer un id unique dans le serveur)
     public JvnObject jvnCreateObject(Serializable o) throws jvn.JvnException {
-    	JvnObject obj = new JvnObjectImpl(o, 1, this);
-    	objects.put(obj.jvnGetObjectId(), obj);
+        JvnObject obj = new JvnObjectImpl(o, 1, this);
+        objects.put(obj.jvnGetObjectId(), obj);
         return obj;
     }
 
@@ -93,14 +92,14 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @param jon : the JVN object name
      * @param jo : the JVN object
      * @throws JvnException
-	*
+     *
      */
     public void jvnRegisterObject(String jon, JvnObject jo) throws jvn.JvnException {
-    	try {
-			coord.jvnRegisterObject(jon, jo, this);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
+        try {
+            coord.jvnRegisterObject(jon, jo, this);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -109,20 +108,20 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @param jon : the JVN object name
      * @return the JVN object
      * @throws JvnException
-	*
+     *
      */
     public JvnObject jvnLookupObject(String jon) throws jvn.JvnException {
-    	JvnObject obj = null;
-    	try {
-			obj = coord.jvnLookupObject(jon, this);
-			if (obj != null){
-				obj.setLocalServer(this);
-				objects.put(obj.jvnGetObjectId(), obj);
-			}
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-    	return obj;
+        JvnObject obj = null;
+        try {
+            obj = coord.jvnLookupObject(jon, this);
+            if (obj != null) {
+                obj.setLocalServer(this);
+                objects.put(obj.jvnGetObjectId(), obj);
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return obj;
     }
 
     /**
@@ -131,15 +130,15 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @param joi : the JVN object identification
      * @return the current JVN object state
      * @throws JvnException
-	*
+     *
      */
     public Serializable jvnLockRead(int joi) throws JvnException {
-    	Serializable obj = null;
-    	try {
-			obj = coord.jvnLockRead(joi, this);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
+        Serializable obj = null;
+        try {
+            obj = coord.jvnLockRead(joi, this);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         return obj;
     }
 
@@ -149,15 +148,15 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @param joi : the JVN object identification
      * @return the current JVN object state
      * @throws JvnException
-	*
+     *
      */
     public Serializable jvnLockWrite(int joi) throws JvnException {
-    	Serializable obj = null;
-    	try {
-			obj = coord.jvnLockWrite(joi, this);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
+        Serializable obj = null;
+        try {
+            obj = coord.jvnLockWrite(joi, this);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         return obj;
     }
 
@@ -168,7 +167,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @param joi : the JVN object id
      * @return void
      * @throws java.rmi.RemoteException,JvnException
-	*
+     *
      */
     public void jvnInvalidateReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
         objects.get(joi).jvnInvalidateReader();
@@ -187,7 +186,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
     }
 
     ;
-	
+  	
 	/**
 	* Reduce the Write lock of the JVN object identified by id 
 	* @param joi : the JVN object id

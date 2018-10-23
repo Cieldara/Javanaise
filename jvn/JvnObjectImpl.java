@@ -1,8 +1,9 @@
 package jvn;
 
 import java.io.Serializable;
+import java.rmi.Remote;
 
-public class JvnObjectImpl implements JvnObject{
+public class JvnObjectImpl implements Remote, JvnObject{
 	
 	private Serializable obj;
 	private int id;
@@ -103,5 +104,10 @@ public class JvnObjectImpl implements JvnObject{
 	public boolean isStateWrite() {
 		return (state == State.W || state == State.WC || state == State.RWC);
 	}
+        
+        @Override 
+        public String toString(){
+            return obj.toString();
+        }
 
 }
