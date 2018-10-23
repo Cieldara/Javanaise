@@ -7,21 +7,30 @@
  */
 package jvn;
 
-import java.rmi.server.UnicastRemoteObject;
 import java.io.Serializable;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class JvnCoordImpl
-        extends UnicastRemoteObject
-        implements JvnRemoteCoord {
+public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
 
+	private Set<JvnRemoteServer> clients;
+	private Map<Integer, JvnObject> objects;
+	private Map<String, Integer> table;
+	private int lastID;
+	
     /**
      * Default constructor
      *
      * @throws JvnException
      *
      */
-    private JvnCoordImpl() throws Exception {
-        // to be completed
+    public JvnCoordImpl() throws Exception {
+    	clients = new HashSet<JvnRemoteServer>();
+    	objects = new HashMap<Integer, JvnObject>();
+    	table = new HashMap<String, Integer>();
     }
 
     /**
@@ -32,8 +41,7 @@ public class JvnCoordImpl
      *
      */
     public int jvnGetObjectId() throws java.rmi.RemoteException, jvn.JvnException {
-        // to be completed 
-        return 0;
+        return lastID++;
     }
 
     /**
@@ -47,7 +55,9 @@ public class JvnCoordImpl
      *
      */
     public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
-        // to be completed 
+    	table.put(jon, jo.jvnGetObjectId());
+        objects.put(jo.jvnGetObjectId(), jo);
+        clients.add(js);
     }
 
     /**
@@ -59,8 +69,7 @@ public class JvnCoordImpl
      *
      */
     public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
-        // to be completed 
-        return null;
+        return objects.get(table.get(jon));
     }
 
     /**
@@ -73,8 +82,8 @@ public class JvnCoordImpl
      *
      */
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        // to be completed
-        return null;
+    	
+        return objects.get(joi).jvnGetObjectState();
     }
 
     /**
@@ -88,7 +97,7 @@ public class JvnCoordImpl
      */
     public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         // to be completed
-        return null;
+        return objects.get(joi).jvnGetObjectState();
     }
 
     /**
@@ -99,6 +108,6 @@ public class JvnCoordImpl
      *
      */
     public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        // to be completed
+        clients.remove(js);
     }
 }

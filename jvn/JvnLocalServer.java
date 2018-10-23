@@ -13,7 +13,7 @@ import java.io.Serializable;
  * can get the reference of a JVN server through the static method
  * jvnGetServer() (see JvnServerImpl).
  */
-public interface JvnLocalServer {
+public interface JvnLocalServer extends Serializable{
 
     /**
      * create of a JVN object
