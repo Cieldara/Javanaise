@@ -11,6 +11,7 @@ import java.io.Serializable;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,6 +21,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     private Map<Integer, JvnObject> objects;
     private Map<String, Integer> table;
     private int lastID;
+    private Set<JvnRemoteServer> clientsReading;
+    private JvnRemoteServer clientWriting;
 
     /**
      * Default constructor
@@ -31,6 +34,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         clients = new HashSet<JvnRemoteServer>();
         objects = new HashMap<Integer, JvnObject>();
         table = new HashMap<String, Integer>();
+        clientsReading = new HashSet<>();
     }
 
     /**
@@ -58,6 +62,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         table.put(jon, jo.jvnGetObjectId());
         objects.put(jo.jvnGetObjectId(), jo);
         clients.add(js);
+        clientWriting = js;
     }
 
     /**
@@ -82,12 +87,14 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *
      */
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+
         JvnObject obj = objects.get(joi);
         Serializable ret = obj.jvnGetObjectState();
-        if (obj.isStateWrite()) {
-            ret = js.jvnInvalidateWriterForReader(joi);
-            obj.jvnSetObjectState(ret);
-        }
+        ret = clientWriting.jvnInvalidateWriter(joi);
+        obj.jvnSetObjectState(ret);
+        //On peut changer le lecteur courant en lecteur
+        clientsReading.add(clientWriting);
+        clientsReading.add(js);
         return ret;
     }
 
@@ -103,13 +110,18 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         JvnObject obj = objects.get(joi);
         Serializable ret = obj.jvnGetObjectState();
-        if (obj.isStateWrite()) {
-            ret = js.jvnInvalidateWriter(joi);
-            obj.jvnSetObjectState(ret);
+        ret = clientWriting.jvnInvalidateWriter(joi);
+        obj.jvnSetObjectState(ret);
+
+        Iterator<JvnRemoteServer>it = clientsReading.iterator();
+        while (it.hasNext()) {
+            JvnRemoteServer current = it.next();
+            current.jvnInvalidateReader(joi);
+
         }
-        if (obj.isStateRead()) {
-            obj.jvnInvalidateReader();
-        }
+        //Plus personne ne doit pouvoir être en mesure de lire
+        clientsReading.clear();
+        clientWriting = js;
         return ret;
     }
 

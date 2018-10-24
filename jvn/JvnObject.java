@@ -87,4 +87,6 @@ public interface JvnObject extends Serializable {
     public boolean isStateRead();
     
     public boolean isStateWrite();
+    
+    public void resetState();
 }

@@ -22,7 +22,7 @@ public class Irc {
     /**
      * main method create a JVN object nammed IRC for representing the Chat
      * application
-  *
+     *
      */
     public static void main(String argv[]) {
         try {
@@ -39,12 +39,14 @@ public class Irc {
                 // after creation, I have a write lock on the object
                 jo.jvnUnLock();
                 js.jvnRegisterObject("IRC", jo);
+            } else {
+                jo.resetState();
             }
             // create the graphical part of the Chat application
             new Irc(jo);
 
         } catch (Exception e) {
-        	e.printStackTrace();
+            e.printStackTrace();
         }
     }
 
@@ -52,7 +54,7 @@ public class Irc {
      * IRC Constructor
      *
      * @param jo the JVN object representing the Chat
-   *
+     *
      */
     public Irc(JvnObject jo) {
         sentence = jo;
@@ -78,7 +80,7 @@ public class Irc {
 
 /**
  * Internal class to manage user events (read) on the CHAT application
-  *
+ *
  */
 class readListener implements ActionListener {
 
@@ -90,7 +92,7 @@ class readListener implements ActionListener {
 
     /**
      * Management of user events
-  *
+     *
      */
     public void actionPerformed(ActionEvent e) {
         try {
@@ -114,7 +116,7 @@ class readListener implements ActionListener {
 
 /**
  * Internal class to manage user events (write) on the CHAT application
-  *
+ *
  */
 class writeListener implements ActionListener {
 
@@ -126,7 +128,7 @@ class writeListener implements ActionListener {
 
     /**
      * Management of user events
-   *
+     *
      */
     public void actionPerformed(ActionEvent e) {
         try {
