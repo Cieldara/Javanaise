@@ -4,7 +4,6 @@
  *
  * Authors:
  */
-package jvn;
 
 import java.io.*;
 
@@ -20,7 +19,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public void jvnLockRead() throws jvn.JvnException;
+    public void jvnLockRead() throws JvnException;
 
     /**
      * Get a Write lock on the object
@@ -28,7 +27,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public void jvnLockWrite() throws jvn.JvnException;
+    public void jvnLockWrite() throws JvnException;
 
     /**
      * Unlock the object
@@ -36,7 +35,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public void jvnUnLock() throws jvn.JvnException;
+    public void jvnUnLock() throws JvnException;
 
     /**
      * Get the object identification
@@ -44,7 +43,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public int jvnGetObjectId() throws jvn.JvnException;
+    public int jvnGetObjectId() throws JvnException;
 
     /**
      * Get the object state
@@ -52,7 +51,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public Serializable jvnGetObjectState() throws jvn.JvnException;
+    public Serializable jvnGetObjectState() throws JvnException;
 
     /**
      * Invalidate the Read lock of the JVN object
@@ -60,7 +59,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public void jvnInvalidateReader() throws jvn.JvnException;
+    public void jvnInvalidateReader() throws JvnException;
 
     /**
      * Invalidate the Write lock of the JVN object
@@ -69,7 +68,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public Serializable jvnInvalidateWriter() throws jvn.JvnException;
+    public Serializable jvnInvalidateWriter() throws JvnException;
 
     /**
      * Reduce the Write lock of the JVN object
@@ -78,15 +77,16 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
 	*
      */
-    public Serializable jvnInvalidateWriterForReader() throws jvn.JvnException;
+    public Serializable jvnInvalidateWriterForReader() throws JvnException;
     
     public void jvnSetObjectState(Serializable obj);
     
     public void setLocalServer(JvnLocalServer localServer);
     
-    public boolean isStateRead();
+    public void read();
     
-    public boolean isStateWrite();
+    public void write(String s);
     
     public void resetState();
+
 }

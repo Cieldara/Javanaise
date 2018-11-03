@@ -1,16 +1,30 @@
-package jvn;
 
 import java.io.Serializable;
 import java.rmi.Remote;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class JvnObjectImpl implements Remote, JvnObject {
 
     private Serializable obj;
     private int id;
 
+    @Override
+    public void read() {
+        throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods, choose
+                                                                       // Tools | Templates.
+    }
+
+    @Override
+    public void write(String s) {
+        throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods, choose
+                                                                       // Tools | Templates.
+    }
+
     public enum State {
         NL, R, RC, W, WC, RWC
     };
+
     private State state;
     private transient JvnLocalServer localServer;
 
@@ -22,41 +36,47 @@ public class JvnObjectImpl implements Remote, JvnObject {
     }
 
     public void jvnLockRead() throws JvnException {
+
+        System.out.println("Read " + state);
         switch (state) {
-            case NL:
-                obj = localServer.jvnLockRead(id);
-                state = State.R;
-                break;
-            case RC:
-                state = State.R;
-                break;
-            case WC:
-                state = State.RWC;
-                break;
-            default:
-                break;
+        case NL:
+            state = State.R;
+            obj = localServer.jvnLockRead(id);
+
+            break;
+        case RC:
+            state = State.R;
+            break;
+        case WC:
+            state = State.RWC;
+            break;
+        default:
+            break;
         }
     }
 
     public void jvnLockWrite() throws JvnException {
         switch (state) {
-            case NL:
-            case RC:
-                obj = localServer.jvnLockWrite(id);
-                state = State.W;
-            default:
+        case NL:
+        case RC:
+            state = State.W;
+            obj = localServer.jvnLockWrite(id);
+
+        default:
         }
     }
 
-    public void jvnUnLock() throws JvnException {
+    public synchronized void jvnUnLock() throws JvnException {
+
         switch (state) {
-            case W:
-                state = State.WC;
-                break;
-            case R:
-                state = State.RC;
-            default:
+        case W:
+            state = State.WC;
+            break;
+        case R:
+            state = State.RC;
+        default:
         }
+        this.notify();
     }
 
     public int jvnGetObjectId() throws JvnException {
@@ -72,41 +92,61 @@ public class JvnObjectImpl implements Remote, JvnObject {
     }
 
     @Override
-    public void jvnInvalidateReader() throws JvnException {
+    public synchronized void jvnInvalidateReader() throws JvnException {
+        System.out.print("IR " + this.state);
+        while (this.state == State.R) {
+            try {
+                this.wait();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(JvnObjectImpl.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
         state = State.NL;
+        System.out.println("To " + state);
     }
 
     @Override
-    public Serializable jvnInvalidateWriter() throws JvnException {
+    public synchronized Serializable jvnInvalidateWriter() throws JvnException {
+        System.out.print("IW " + this.state);
+        while (state == State.W) {
+            try {
+                this.wait();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(JvnObjectImpl.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
         state = State.NL;
+        System.out.println("To " + state);
         return obj;
     }
 
     @Override
-    public Serializable jvnInvalidateWriterForReader() throws JvnException {
+    public synchronized Serializable jvnInvalidateWriterForReader() throws JvnException {
+        System.out.print("IWR " + this.state);
         switch (state) {
-            case W:
-                state = State.RC;
-                break;
-            case RWC:
-                state = State.R;
-            default:
+        case W:
+            while (this.state == State.W) {
+                try {
+                    this.wait();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(JvnObjectImpl.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            state = State.RC;
+            break;
+        case WC:
+        case RWC:
+            state = State.RC;
+        default:
         }
+        System.out.println("To " + state);
         return obj;
     }
 
     public void setLocalServer(JvnLocalServer localServer) {
         this.localServer = localServer;
-    }
-
-    @Override
-    public boolean isStateRead() {
-        return (state == State.R || state == State.RC);
-    }
-
-    @Override
-    public boolean isStateWrite() {
-        return (state == State.W || state == State.WC || state == State.RWC);
     }
 
     @Override

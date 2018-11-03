@@ -5,7 +5,6 @@
  *
  * Authors:
  */
-package irc;
 
 public class Sentence implements java.io.Serializable {
 

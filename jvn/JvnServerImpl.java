@@ -1,11 +1,11 @@
+
 /** *
  * JAVANAISE Implementation
  * JvnServerImpl class
  * Contact:
  *
  * Authors:
- */
-package jvn;
+*/
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -15,13 +15,16 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Map;
 import java.io.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer, JvnRemoteServer {
 
-    // A JVN server is managed as a singleton 
+    // A JVN server is managed as a singleton
     private static JvnServerImpl js = null;
     private JvnRemoteCoord coord;
     private Map<Integer, JvnObject> objects;
+    private int id;
 
     /**
      * Default constructor
@@ -34,6 +37,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
         Registry registry = LocateRegistry.getRegistry(1099);
         try {
             coord = (JvnRemoteCoord) registry.lookup("RemoteCoord");
+            id = coord.jvnGetObjectId();
         } catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
         }
@@ -64,7 +68,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws JvnException
      *
      */
-    public void jvnTerminate() throws jvn.JvnException {
+    public void jvnTerminate() throws JvnException {
         try {
             coord.jvnTerminate(this);
         } catch (RemoteException e) {
@@ -79,9 +83,15 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws JvnException
      *
      */
-    //TODO Decide Id (récupérer un id unique dans le serveur)
-    public JvnObject jvnCreateObject(Serializable o) throws jvn.JvnException {
-        JvnObject obj = new JvnObjectImpl(o, 1, this);
+    // TODO Decide Id (récupérer un id unique dans le serveur)
+    public JvnObject jvnCreateObject(Serializable o) throws JvnException {
+        int id = 0;
+        try {
+            id = coord.jvnGetObjectId();
+        } catch (RemoteException ex) {
+            Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        JvnObject obj = new JvnObjectImpl(o, id, this);
         objects.put(obj.jvnGetObjectId(), obj);
         return obj;
     }
@@ -90,11 +100,11 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * Associate a symbolic name with a JVN object
      *
      * @param jon : the JVN object name
-     * @param jo : the JVN object
+     * @param jo  : the JVN object
      * @throws JvnException
      *
      */
-    public void jvnRegisterObject(String jon, JvnObject jo) throws jvn.JvnException {
+    public void jvnRegisterObject(String jon, JvnObject jo) throws JvnException {
         try {
             coord.jvnRegisterObject(jon, jo, this);
         } catch (RemoteException e) {
@@ -110,13 +120,14 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws JvnException
      *
      */
-    public JvnObject jvnLookupObject(String jon) throws jvn.JvnException {
+    public synchronized JvnObject jvnLookupObject(String jon) throws JvnException {
         JvnObject obj = null;
         try {
             obj = coord.jvnLookupObject(jon, this);
             if (obj != null) {
                 obj.setLocalServer(this);
                 objects.put(obj.jvnGetObjectId(), obj);
+
             }
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -134,12 +145,27 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      */
     public Serializable jvnLockRead(int joi) throws JvnException {
         Serializable obj = null;
-        try {
-            obj = coord.jvnLockRead(joi, this);
-        } catch (RemoteException e) {
-            e.printStackTrace();
+        boolean connected = false;
+        while (!connected) {
+            try {
+                obj = coord.jvnLockRead(joi, this);
+                connected = true;
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                connectToCoord();
+            }
         }
         return obj;
+    }
+
+    private void connectToCoord() {  
+        try {
+            Registry registry = LocateRegistry.getRegistry(1099);
+            coord = (JvnRemoteCoord) registry.lookup("RemoteCoord");
+        } catch (RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -152,10 +178,15 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      */
     public Serializable jvnLockWrite(int joi) throws JvnException {
         Serializable obj = null;
-        try {
-            obj = coord.jvnLockWrite(joi, this);
-        } catch (RemoteException e) {
-            e.printStackTrace();
+        boolean connected = false;
+        while (!connected) {
+            try {
+                obj = coord.jvnLockWrite(joi, this);
+                connected = true;
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                connectToCoord();
+            }
         }
         return obj;
     }
@@ -169,33 +200,39 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws java.rmi.RemoteException,JvnException
      *
      */
-    public void jvnInvalidateReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
+    public void jvnInvalidateReader(int joi) throws java.rmi.RemoteException, JvnException {
         objects.get(joi).jvnInvalidateReader();
     }
 
     ;
-	    
-	/**
-	* Invalidate the Write lock of the JVN object identified by id 
-	* @param joi : the JVN object id
-	* @return the current JVN object state
-	* @throws java.rmi.RemoteException,JvnException
-	**/
-  public Serializable jvnInvalidateWriter(int joi) throws java.rmi.RemoteException, jvn.JvnException {
+
+    /**
+     * Invalidate the Write lock of the JVN object identified by id
+     * 
+     * @param joi : the JVN object id
+     * @return the current JVN object state
+     * @throws java.rmi.RemoteException,JvnException
+     **/
+    public Serializable jvnInvalidateWriter(int joi) throws java.rmi.RemoteException, JvnException {
         return objects.get(joi).jvnInvalidateWriter();
     }
 
     ;
-  	
-	/**
-	* Reduce the Write lock of the JVN object identified by id 
-	* @param joi : the JVN object id
-	* @return the current JVN object state
-	* @throws java.rmi.RemoteException,JvnException
-	**/
-   public Serializable jvnInvalidateWriterForReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
+
+    /**
+     * Reduce the Write lock of the JVN object identified by id
+     * 
+     * @param joi : the JVN object id
+     * @return the current JVN object state
+     * @throws java.rmi.RemoteException,JvnException
+     **/
+    public Serializable jvnInvalidateWriterForReader(int joi) throws java.rmi.RemoteException, JvnException {
         return objects.get(joi).jvnInvalidateWriterForReader();
+    };
+
+    @Override
+    public boolean equals(Object j) {
+        return this.id == ((JvnServerImpl) j).id;
     }
-;
 
 }

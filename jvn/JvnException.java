@@ -4,7 +4,6 @@
  *
  * Authors:
  */
-package jvn;
 
 /**
  * Interface of a JVN Exception.
