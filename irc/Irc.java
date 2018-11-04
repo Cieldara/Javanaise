@@ -1,3 +1,4 @@
+
 /** *
  * Irc class : simple implementation of a chat using JAVANAISE
  * Contact:
@@ -37,7 +38,7 @@ public class Irc {
                 // after creation, I have a write lock on the object
                 jo.jvnUnLock();
                 js.jvnRegisterObject("IRC", jo);
-           }
+            }
             // create the graphical part of the Chat application
             new Irc(jo);
 
@@ -94,22 +95,20 @@ class readListener implements ActionListener {
      *
      */
     public void actionPerformed(ActionEvent e) {
-        try {
-            // lock the object in read mode
-            irc.sentence.jvnLockRead();
 
-            // invoke the method
-            String s = ((Sentence) (irc.sentence.jvnGetObjectState())).read();
+        // lock the object in read mode
+        // irc.sentence.jvnLockRead();
 
-            // unlock the object
-            irc.sentence.jvnUnLock();
+        // invoke the method
+        String s = irc.sentence.read();
 
-            // display the read value
-            irc.data.setText(s);
-            irc.text.append(s + "\n");
-        } catch (JvnException je) {
-            System.out.println("IRC problem : " + je.getMessage());
-        }
+        // unlock the object
+        // irc.sentence.jvnUnLock();
+
+        // display the read value
+        irc.data.setText(s);
+        irc.text.append(s + "\n");
+
     }
 }
 
@@ -130,24 +129,22 @@ class writeListener implements ActionListener {
      *
      */
     public synchronized void actionPerformed(ActionEvent e) {
-        try {
-            // get the value to be written from the buffer
-            String s = irc.data.getText();
 
-            // lock the object in write mode
-            irc.sentence.jvnLockWrite();
-            // invoke the method
-            ((Sentence) (irc.sentence.jvnGetObjectState())).write(s);
-            // unlock the object
-            irc.sentence.jvnUnLock();
-        } catch (JvnException je) {
-            System.out.println("IRC problem  : " + je.getMessage());
-        }
+        // get the value to be written from the buffer
+        String s = irc.data.getText();
+
+        irc.sentence.write(s);
+
+        // lock the object in write mode
+        // irc.sentence.jvnLockWrite();
+        // invoke the method
+        // ((Sentence) (irc.sentence.jvnGetObjectState())).write(s);
+        // unlock the object
+        // irc.sentence.jvnUnLock();
+
     }
 
-    
 }
-
 
 /**
  * Internal class to manage user events (unlock) on the CHAT application
@@ -171,5 +168,5 @@ class unlockListener implements ActionListener {
         } catch (JvnException je) {
             System.out.println("IRC problem  : " + je.getMessage());
         }
-    }  
+    }
 }

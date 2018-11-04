@@ -10,7 +10,7 @@ public class JvnObjectImpl implements Remote, JvnObject {
     private int id;
 
     @Override
-    public void read() {
+    public String read() {
         throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods, choose
                                                                        // Tools | Templates.
     }

@@ -17,6 +17,9 @@ import java.util.Map;
 import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.reflect.Proxy;
+
+
 
 public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer, JvnRemoteServer {
 
@@ -83,7 +86,6 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws JvnException
      *
      */
-    // TODO Decide Id (récupérer un id unique dans le serveur)
     public JvnObject jvnCreateObject(Serializable o) throws JvnException {
         int id = 0;
         try {
@@ -92,8 +94,12 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
             Logger.getLogger(JvnServerImpl.class.getName()).log(Level.SEVERE, null, ex);
         }
         JvnObject obj = new JvnObjectImpl(o, id, this);
+        ProxyInvocationHandler handler = new ProxyInvocationHandler(obj);
+        JvnObject object = (JvnObject) Proxy.newProxyInstance(JvnObject.class.getClassLoader(),new Class[] { JvnObject.class }, handler);
+
+        
         objects.put(obj.jvnGetObjectId(), obj);
-        return obj;
+        return object;
     }
 
     /**

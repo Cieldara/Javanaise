@@ -83,7 +83,7 @@ public interface JvnObject extends Serializable {
     
     public void setLocalServer(JvnLocalServer localServer);
     
-    public void read();
+    public String read();
     
     public void write(String s);
     
