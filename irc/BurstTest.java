@@ -1,0 +1,40 @@
+package irc;
+
+import java.io.Serializable;
+import jvn.JvnException;
+import jvn.JvnObject;
+import jvn.JvnServerImpl;
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+/**
+ *
+ * @author gontardb
+ */
+public class BurstTest {
+
+    public static void main(String[] args) throws JvnException {
+
+        JvnServerImpl js = JvnServerImpl.jvnGetServer();
+        // look up the IRC object in the JVN server
+        // if not found, create it, and register it in the JVN server
+        JvnObject jo = js.jvnLookupObject("IRC");
+
+        if (jo == null) {
+            jo = js.jvnCreateObject((Serializable) new Sentence());
+            // after creation, I have a write lock on the object
+            jo.jvnUnLock();
+            js.jvnRegisterObject("IRC", jo);
+        }
+        
+        
+        for(int i = 0; i <= 5000; i++){
+            Integer entier = Integer.parseInt(jo.read());
+            System.out.println(entier--);
+            jo.write(entier.toString());
+        }
+    }
+}
