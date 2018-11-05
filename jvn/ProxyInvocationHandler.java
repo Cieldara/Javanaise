@@ -1,6 +1,10 @@
-import java.lang.reflect.Method;
+package jvn;
+
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+import irc.Sentence;
 
 public class ProxyInvocationHandler implements InvocationHandler, Serializable{
 

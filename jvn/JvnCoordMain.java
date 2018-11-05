@@ -1,3 +1,4 @@
+package jvn;
 
 
 import java.rmi.registry.LocateRegistry;
