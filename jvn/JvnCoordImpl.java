@@ -14,6 +14,7 @@ import java.io.ObjectOutputStream;
  */
 
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     private int lastID;
     private Map<Integer, Set<JvnRemoteServer>> clientsReading;
     private Map<Integer, JvnRemoteServer> clientWriting;
+    private HashMap<String, Boolean> objectExisting;
 
     /**
      * Default constructor
@@ -72,14 +74,19 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      *
      */
-    public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
+    public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        table.put(jon, jo.jvnGetObjectId());
-        objects.put(jo.jvnGetObjectId(), jo);
-        clients.add(js);
-        clientsReading.put(jo.jvnGetObjectId(), new HashSet<JvnRemoteServer>());
-        clientWriting.put(jo.jvnGetObjectId(), js);
-        saveState();
+
+        if (objectExisting.get(jon) == Boolean.TRUE) {
+            table.put(jon, jo.jvnGetObjectId());
+            objects.put(jo.jvnGetObjectId(), jo);
+            clients.add(js);
+            clientsReading.put(jo.jvnGetObjectId(), new HashSet<JvnRemoteServer>());
+            clientWriting.put(jo.jvnGetObjectId(), js);
+            objectExisting.put(jon, Boolean.FALSE);
+            this.notifyAll();
+            saveState();
+        }
     }
 
     /**
@@ -90,10 +97,26 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException,JvnException
      *
      */
-    public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+    public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
 
         JvnObject obj = objects.get(table.get(jon));
+
+        if (obj == null) {
+            if (objectExisting.get(jon) == null) {
+                objectExisting.put(jon, Boolean.TRUE);
+            } else {
+                while (objectExisting.get(jon).equals(Boolean.TRUE)) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException ex) {
+                    	ex.printStackTrace();
+                    }
+                }
+            }
+        }
         if (obj != null) {
+        	clients.add(js);
+        	saveState();
             obj.resetState();
         }
         return obj;
@@ -117,10 +140,10 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
             clientsReading.get(joi).add(clientWriting.get(joi));
         }
         obj.jvnSetObjectState(ret);
+        saveState();
         // On peut changer le lecteur courant en lecteur
         clientsReading.get(joi).add(js);
         clientWriting.put(joi, null);
-        saveState();
         return ret;
     }
 
@@ -140,6 +163,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
             ret = clientWriting.get(joi).jvnInvalidateWriter(joi);
         }
         obj.jvnSetObjectState(ret);
+        saveState();
 
         Iterator<JvnRemoteServer> it = clientsReading.get(joi).iterator();
         while (it.hasNext()) {
@@ -151,7 +175,6 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         // Plus personne ne doit pouvoir être en mesure de lire
         clientsReading.get(joi).clear();
         clientWriting.put(joi, js);
-        saveState();
         return ret;
     }
 
@@ -180,6 +203,28 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
             clientsReading.put(i, newSet);
         }
         saveState();
+    }
+    
+    public void jvnInvalideFailure() throws JvnException{
+    	for(JvnRemoteServer client : clients){
+    		Boolean connect = false;
+    		for (int i=0; i<10 && !connect; i++){
+	    		try {
+					client.jvnInvalidateFailure();
+					connect = true;
+				} catch (RemoteException e) {
+					e.printStackTrace();
+				}
+    		}
+    		if(!connect){
+    			clients.remove(client);
+    		}
+    	}
+    	Set<Integer> keyset = clientsReading.keySet();
+        for(Integer i : keyset){
+        	clientsReading.get(i).clear();
+        	clientWriting.put(i, null);
+        }
     }
     
     private void saveState(){

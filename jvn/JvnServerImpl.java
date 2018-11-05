@@ -236,6 +236,11 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
     public Serializable jvnInvalidateWriterForReader(int joi) throws java.rmi.RemoteException, JvnException {
         return objects.get(joi).jvnInvalidateWriterForReader();
     };
+    
+    @Override
+    public void jvnInvalidateFailure() throws RemoteException, JvnException {
+    	objects.forEach((i,o) -> o.jvnInvalidateFailure());  	
+    }
 
     @Override
     public boolean equals(Object j) {

@@ -92,4 +92,6 @@ public interface JvnObject extends Serializable {
     
     public void resetState();
 
+	public void jvnInvalidateFailure();
+
 }

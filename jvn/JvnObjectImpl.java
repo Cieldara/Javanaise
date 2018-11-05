@@ -146,6 +146,11 @@ public class JvnObjectImpl implements Remote, JvnObject {
         return obj;
     }
 
+    @Override
+    public synchronized void jvnInvalidateFailure() {
+    	state = State.NL;
+    }
+
     public void setLocalServer(JvnLocalServer localServer) {
         this.localServer = localServer;
     }
@@ -158,5 +163,6 @@ public class JvnObjectImpl implements Remote, JvnObject {
     public void resetState() {
         this.state = State.NL;
     }
+
 
 }

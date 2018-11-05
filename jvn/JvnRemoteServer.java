@@ -44,4 +44,6 @@ public interface JvnRemoteServer extends Remote {
      */
     public Serializable jvnInvalidateWriterForReader(int joi) throws java.rmi.RemoteException, JvnException;
 
+	public void jvnInvalidateFailure() throws java.rmi.RemoteException, JvnException;
+
 }

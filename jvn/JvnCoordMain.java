@@ -25,6 +25,8 @@ public class JvnCoordMain {
 		}
     	if (coordImpl == null){
     		coordImpl = new JvnCoordImpl();
+    	} else {
+    		((JvnCoordImpl)coordImpl).jvnInvalideFailure();
     	}
 		Registry registry = LocateRegistry.createRegistry(1099);
 		registry.bind("RemoteCoord", coordImpl);
