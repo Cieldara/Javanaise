@@ -94,7 +94,6 @@ public class JvnObjectImpl implements Remote, JvnObject {
 
     @Override
     public synchronized void jvnInvalidateReader() throws JvnException {
-        System.out.print("IR " + this.state);
         while (this.state == State.R) {
             try {
                 this.wait();
@@ -104,12 +103,10 @@ public class JvnObjectImpl implements Remote, JvnObject {
         }
         
         state = State.NL;
-        System.out.println("To " + state);
     }
 
     @Override
     public synchronized Serializable jvnInvalidateWriter() throws JvnException {
-        System.out.print("IW " + this.state);
         while (state == State.W) {
             try {
                 this.wait();
@@ -119,13 +116,11 @@ public class JvnObjectImpl implements Remote, JvnObject {
         }
 
         state = State.NL;
-        System.out.println("To " + state);
         return obj;
     }
 
     @Override
     public synchronized Serializable jvnInvalidateWriterForReader() throws JvnException {
-        System.out.print("IWR " + this.state);
         switch (state) {
         case W:
             while (this.state == State.W) {
@@ -142,7 +137,6 @@ public class JvnObjectImpl implements Remote, JvnObject {
             state = State.RC;
         default:
         }
-        System.out.println("To " + state);
         return obj;
     }
 

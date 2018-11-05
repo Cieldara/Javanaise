@@ -13,7 +13,7 @@ public class JvnCoordMain {
 		
 		try{
 		JvnRemoteCoord coordImpl = null;
-		Boolean debug = true;
+		Boolean debug = false;
 		if (debug){
 	    	try {
 				ObjectInputStream in = new ObjectInputStream(new FileInputStream("CoordImpl.ser"));

@@ -34,7 +34,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     private int lastID;
     private Map<Integer, Set<JvnRemoteServer>> clientsReading;
     private Map<Integer, JvnRemoteServer> clientWriting;
-    private HashMap<String, Boolean> objectExisting;
+    private Map<String, Boolean> objectExisting;
 
     /**
      * Default constructor
@@ -48,6 +48,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         table = new HashMap<String, Integer>();
         clientsReading = new HashMap<>();
         clientWriting = new HashMap<>();
+        objectExisting = new HashMap<>();
         this.lastID = 0;
     }
 
@@ -112,9 +113,11 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
                     	ex.printStackTrace();
                     }
                 }
+                obj = objects.get(table.get(jon));
             }
         }
         if (obj != null) {
+        	System.out.println("Toto");
         	clients.add(js);
         	saveState();
             obj.resetState();
@@ -185,7 +188,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException, JvnException
      *
      */   
-    public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+    public synchronized void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         clients.remove(js);
         Set<Integer> keyset = clientWriting.keySet();
         for(Integer i : keyset){

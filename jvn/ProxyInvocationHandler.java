@@ -33,7 +33,6 @@ public class ProxyInvocationHandler implements InvocationHandler, Serializable{
             retour = method.invoke(target, args);
         }
 
-        System.out.println("Invoked method: " + method.getName());
         return retour;
     }
 }

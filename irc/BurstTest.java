@@ -31,10 +31,17 @@ public class BurstTest {
         }
         
         
-        for(int i = 0; i <= 5000; i++){
+        for(int i = 0; i < 1000; i++){
             Integer entier = Integer.parseInt(jo.read());
-            System.out.println(entier--);
+            System.out.println(args[0] + ":" + entier++);
             jo.write(entier.toString());
+            try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
         }
+        js.jvnTerminate();
+        System.out.println(args[0]+":Fin");
     }
 }
