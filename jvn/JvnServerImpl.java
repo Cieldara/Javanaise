@@ -158,7 +158,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
                 obj = coord.jvnLockRead(joi, this);
                 connected = true;
             } catch (RemoteException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 connectToCoord();
             }
         }
@@ -191,7 +191,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
                 obj = coord.jvnLockWrite(joi, this);
                 connected = true;
             } catch (RemoteException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 connectToCoord();
             }
         }

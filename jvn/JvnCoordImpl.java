@@ -1,6 +1,10 @@
 package jvn;
 
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+
 /** *
  * JAVANAISE Implementation
  * JvnServerImpl class
@@ -19,7 +23,11 @@ import java.util.Set;
 
 public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
 
-    private Set<JvnRemoteServer> clients;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -2750888055864804653L;
+	private Set<JvnRemoteServer> clients;
     private Map<Integer, JvnObject> objects;
     private Map<String, Integer> table;
     private int lastID;
@@ -36,7 +44,6 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         clients = new HashSet<JvnRemoteServer>();
         objects = new HashMap<Integer, JvnObject>();
         table = new HashMap<String, Integer>();
-        // clientsReading = new HashSet<>();
         clientsReading = new HashMap<>();
         clientWriting = new HashMap<>();
         this.lastID = 0;
@@ -50,7 +57,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *
      */
     public int jvnGetObjectId() throws java.rmi.RemoteException, JvnException {
-        return lastID++;
+    	lastID++;
+    	saveState();
+        return lastID;
     }
 
     /**
@@ -70,7 +79,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         clients.add(js);
         clientsReading.put(jo.jvnGetObjectId(), new HashSet<JvnRemoteServer>());
         clientWriting.put(jo.jvnGetObjectId(), js);
-        // clientWriting = js;
+        saveState();
     }
 
     /**
@@ -105,12 +114,13 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         Serializable ret = obj.jvnGetObjectState();
         if (clientWriting.get(joi) != null) {
             ret = clientWriting.get(joi).jvnInvalidateWriterForReader(joi);
+            clientsReading.get(joi).add(clientWriting.get(joi));
         }
         obj.jvnSetObjectState(ret);
         // On peut changer le lecteur courant en lecteur
-        clientsReading.get(joi).add(clientWriting.get(joi));
         clientsReading.get(joi).add(js);
         clientWriting.put(joi, null);
+        saveState();
         return ret;
     }
 
@@ -137,11 +147,11 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
             if (!current.equals(js)) {
                 current.jvnInvalidateReader(joi);
             }
-
         }
         // Plus personne ne doit pouvoir être en mesure de lire
         clientsReading.get(joi).clear();
         clientWriting.put(joi, js);
+        saveState();
         return ret;
     }
 
@@ -151,8 +161,36 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @param js : the remote reference of the server
      * @throws java.rmi.RemoteException, JvnException
      *
-     */
+     */   
     public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         clients.remove(js);
+        Set<Integer> keyset = clientWriting.keySet();
+        for(Integer i : keyset){
+            if(clientWriting.get(i) != null && clientWriting.get(i) == js){
+                clientWriting.put(i, null);
+            }
+            
+            Set<JvnRemoteServer> serverSet = clientsReading.get(i);
+            Set<JvnRemoteServer> newSet = new HashSet<>();
+            for(JvnRemoteServer server : serverSet){
+                if(server != js){
+                    newSet.add(server);
+                }
+            }
+            clientsReading.put(i, newSet);
+        }
+        saveState();
+    }
+    
+    private void saveState(){
+    	ObjectOutputStream out;
+		try {
+			out = new ObjectOutputStream(new FileOutputStream("CoordImpl.ser"));
+	    	out.writeObject(this);
+	    	out.flush();
+	    	out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 }
