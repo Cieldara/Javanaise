@@ -29,19 +29,20 @@ public class BurstTest {
             jo.jvnUnLock();
             js.jvnRegisterObject("IRC", jo);
         }
-        
-        
-        for(int i = 0; i < 1000; i++){
+
+        for (int i = 0; i < 10; i++) {
             Integer entier = Integer.parseInt(jo.read());
-            System.out.println(args[0] + ":" + entier++);
+            System.out.println(args[0] + ":" + entier++ + " " +i);
             jo.write(entier.toString());
             try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+        System.out.println(args[0] + ": Fin de boucle");
         js.jvnTerminate();
-        System.out.println(args[0]+":Fin");
+        System.out.println(args[0] + ": Fin du processus");
+        System.exit(0);
     }
 }

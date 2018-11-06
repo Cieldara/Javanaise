@@ -38,7 +38,6 @@ public class JvnObjectImpl implements Remote, JvnObject {
 
     public void jvnLockRead() throws JvnException {
 
-        System.out.println("Read " + state);
         switch (state) {
         case NL:
             state = State.R;
@@ -77,7 +76,7 @@ public class JvnObjectImpl implements Remote, JvnObject {
             state = State.RC;
         default:
         }
-        this.notify();
+        this.notifyAll();
     }
 
     public int jvnGetObjectId() throws JvnException {

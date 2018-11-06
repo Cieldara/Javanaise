@@ -1,21 +1,19 @@
 package jvn;
 
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
-/** *
- * JAVANAISE Implementation
- * JvnServerImpl class
- * Contact:
+/**
+ * *
+ * JAVANAISE Implementation JvnServerImpl class Contact:
  *
  * Authors:
  */
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,16 +23,18 @@ import java.util.Set;
 public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
 
     /**
-	 * 
-	 */
-	private static final long serialVersionUID = -2750888055864804653L;
-	private Set<JvnRemoteServer> clients;
+     *
+     */
+    private static final long serialVersionUID = -2750888055864804653L;
+    private Set<JvnRemoteServer> clients;
     private Map<Integer, JvnObject> objects;
     private Map<String, Integer> table;
     private int lastID;
     private Map<Integer, Set<JvnRemoteServer>> clientsReading;
     private Map<Integer, JvnRemoteServer> clientWriting;
     private Map<String, Boolean> objectExisting;
+    private transient final Object lock = new Object();
+    private int termine = 0;
 
     /**
      * Default constructor
@@ -60,8 +60,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *
      */
     public int jvnGetObjectId() throws java.rmi.RemoteException, JvnException {
-    	lastID++;
-    	saveState();
+        lastID++;
+        saveState();
         return lastID;
     }
 
@@ -69,24 +69,25 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * Associate a symbolic name with a JVN object
      *
      * @param jon : the JVN object name
-     * @param jo  : the JVN object
+     * @param jo : the JVN object
      * @param joi : the JVN object identification
-     * @param js  : the remote reference of the JVNServer
+     * @param js : the remote reference of the JVNServer
      * @throws java.rmi.RemoteException,JvnException
      *
      */
-    public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
+    public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-
-        if (objectExisting.get(jon) == Boolean.TRUE) {
-            table.put(jon, jo.jvnGetObjectId());
-            objects.put(jo.jvnGetObjectId(), jo);
-            clients.add(js);
-            clientsReading.put(jo.jvnGetObjectId(), new HashSet<JvnRemoteServer>());
-            clientWriting.put(jo.jvnGetObjectId(), js);
-            objectExisting.put(jon, Boolean.FALSE);
-            this.notifyAll();
-            saveState();
+        synchronized (lock) {
+            if (objectExisting.get(jon).equals(Boolean.TRUE)) {
+                table.put(jon, jo.jvnGetObjectId());
+                objects.put(jo.jvnGetObjectId(), jo);
+                clients.add(js);
+                clientsReading.put(jo.jvnGetObjectId(), new HashSet<JvnRemoteServer>());
+                clientWriting.put(jo.jvnGetObjectId(), js);
+                objectExisting.put(jon, Boolean.FALSE);
+                lock.notifyAll();
+                saveState();
+            }
         }
     }
 
@@ -94,33 +95,35 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * Get the reference of a JVN object managed by a given JVN server
      *
      * @param jon : the JVN object name
-     * @param js  : the remote reference of the JVNServer
+     * @param js : the remote reference of the JVNServer
      * @throws java.rmi.RemoteException,JvnException
      *
      */
-    public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+    public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+        JvnObject obj = null;
+        synchronized (lock) {
+            obj = objects.get(table.get(jon));
 
-        JvnObject obj = objects.get(table.get(jon));
-
-        if (obj == null) {
-            if (objectExisting.get(jon) == null) {
-                objectExisting.put(jon, Boolean.TRUE);
-            } else {
-                while (objectExisting.get(jon).equals(Boolean.TRUE)) {
-                    try {
-                        this.wait();
-                    } catch (InterruptedException ex) {
-                    	ex.printStackTrace();
+            if (obj == null) {
+                if (objectExisting.get(jon) == null) {
+                    objectExisting.put(jon, Boolean.TRUE);
+                } else {
+                    while (objectExisting.get(jon).equals(Boolean.TRUE)) {
+                        try {
+                            lock.wait();
+                        } catch (InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
                     }
+                    obj = objects.get(table.get(jon));
                 }
-                obj = objects.get(table.get(jon));
+
             }
-        }
-        if (obj != null) {
-        	System.out.println("Toto");
-        	clients.add(js);
-        	saveState();
-            obj.resetState();
+            if (obj != null) {
+                clients.add(js);
+                saveState();
+                obj.resetState();
+            }
         }
         return obj;
     }
@@ -129,24 +132,36 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * Get a Read lock on a JVN object managed by a given JVN server
      *
      * @param joi : the JVN object identification
-     * @param js  : the remote reference of the server
+     * @param js : the remote reference of the server
      * @return the current JVN object state
      * @throws java.rmi.RemoteException, JvnException
      *
      */
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-
-        JvnObject obj = objects.get(joi);
-        Serializable ret = obj.jvnGetObjectState();
-        if (clientWriting.get(joi) != null) {
-            ret = clientWriting.get(joi).jvnInvalidateWriterForReader(joi);
-            clientsReading.get(joi).add(clientWriting.get(joi));
+        JvnObject obj = null;
+        Serializable ret = null;
+        JvnRemoteServer server = null;
+        synchronized (lock) {
+            obj = objects.get(joi);
+            ret = obj.jvnGetObjectState();
+            server = clientWriting.get(joi);
         }
-        obj.jvnSetObjectState(ret);
-        saveState();
-        // On peut changer le lecteur courant en lecteur
-        clientsReading.get(joi).add(js);
-        clientWriting.put(joi, null);
+
+        if (server != null) {
+            ret = server.jvnInvalidateWriterForReader(joi);
+            synchronized (lock) {
+                //Si le Writer récupéré est encore le même, le passer dans les readers, sinon ne rien faire
+                if (server.equals(clientWriting.get(joi))) {
+                    clientsReading.get(joi).add(server);
+                }
+            }
+        }
+        synchronized (lock) {
+            obj.jvnSetObjectState(ret);
+            saveState();
+            clientsReading.get(joi).add(js);
+            clientWriting.put(joi, null);
+        }
         return ret;
     }
 
@@ -154,30 +169,52 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * Get a Write lock on a JVN object managed by a given JVN server
      *
      * @param joi : the JVN object identification
-     * @param js  : the remote reference of the server
+     * @param js : the remote reference of the server
      * @return the current JVN object state
      * @throws java.rmi.RemoteException, JvnException
      *
      */
     public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        JvnObject obj = objects.get(joi);
-        Serializable ret = obj.jvnGetObjectState();
-        if (clientWriting.get(joi) != null) {
-            ret = clientWriting.get(joi).jvnInvalidateWriter(joi);
+        JvnObject obj = null;
+        Serializable ret = null;
+        JvnRemoteServer server = null;
+        synchronized (lock) {
+            obj = objects.get(joi);
+            ret = obj.jvnGetObjectState();
+            server = clientWriting.get(joi);
         }
-        obj.jvnSetObjectState(ret);
-        saveState();
 
-        Iterator<JvnRemoteServer> it = clientsReading.get(joi).iterator();
-        while (it.hasNext()) {
-            JvnRemoteServer current = it.next();
-            if (!current.equals(js)) {
-                current.jvnInvalidateReader(joi);
+        if (server != null) {
+            ret = server.jvnInvalidateWriter(joi);
+            synchronized (lock) {
+                if (server.equals(clientWriting.get(joi))) {
+                    clientsReading.get(joi).add(server);
+                }
             }
         }
+
+        ArrayList<JvnRemoteServer> readerList = new ArrayList<>();
+        synchronized (lock) {
+            obj.jvnSetObjectState(ret);
+            //saveState();
+            Iterator<JvnRemoteServer> it = clientsReading.get(joi).iterator();
+            while (it.hasNext()) {
+                JvnRemoteServer current = it.next();
+                if (!current.equals(js)) {
+                    readerList.add(current);
+                }
+            }
+        }
+
+        for (JvnRemoteServer s : readerList) {
+            s.jvnInvalidateReader(joi);
+        }
+
         // Plus personne ne doit pouvoir être en mesure de lire
-        clientsReading.get(joi).clear();
-        clientWriting.put(joi, js);
+        synchronized (lock) {
+            clientsReading.get(joi).clear();
+            clientWriting.put(joi, js);
+        }
         return ret;
     }
 
@@ -187,58 +224,61 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @param js : the remote reference of the server
      * @throws java.rmi.RemoteException, JvnException
      *
-     */   
-    public synchronized void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        clients.remove(js);
-        Set<Integer> keyset = clientWriting.keySet();
-        for(Integer i : keyset){
-            if(clientWriting.get(i) != null && clientWriting.get(i) == js){
-                clientWriting.put(i, null);
+     */
+    public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+        synchronized (lock) {
+            clients.remove(js);
+            Set<Integer> keyset = new HashSet<>();
+            keyset = clientWriting.keySet();
+            for (Integer i : keyset) {
+                if (clientWriting.get(i) != null && clientWriting.get(i).equals(js)) {
+                    clientWriting.put(i, null);
+                }
+                Set<JvnRemoteServer> serverSet = clientsReading.get(i);
+                Set<JvnRemoteServer> newSet = new HashSet<>();
+                for (JvnRemoteServer server : serverSet) {
+                    if (!server.equals(js)) {
+                        newSet.add(server);
+                    }
+                }
+                clientsReading.put(i, newSet);
+                saveState();
             }
-            
-            Set<JvnRemoteServer> serverSet = clientsReading.get(i);
-            Set<JvnRemoteServer> newSet = new HashSet<>();
-            for(JvnRemoteServer server : serverSet){
-                if(server != js){
-                    newSet.add(server);
+
+        }
+    }
+
+    public void jvnInvalideFailure() throws JvnException {
+        for (JvnRemoteServer client : clients) {
+            Boolean connect = false;
+            for (int i = 0; i < 10 && !connect; i++) {
+                try {
+                    client.jvnInvalidateFailure();
+                    connect = true;
+                } catch (RemoteException e) {
+                    e.printStackTrace();
                 }
             }
-            clientsReading.put(i, newSet);
+            if (!connect) {
+                clients.remove(client);
+            }
         }
-        saveState();
-    }
-    
-    public void jvnInvalideFailure() throws JvnException{
-    	for(JvnRemoteServer client : clients){
-    		Boolean connect = false;
-    		for (int i=0; i<10 && !connect; i++){
-	    		try {
-					client.jvnInvalidateFailure();
-					connect = true;
-				} catch (RemoteException e) {
-					e.printStackTrace();
-				}
-    		}
-    		if(!connect){
-    			clients.remove(client);
-    		}
-    	}
-    	Set<Integer> keyset = clientsReading.keySet();
-        for(Integer i : keyset){
-        	clientsReading.get(i).clear();
-        	clientWriting.put(i, null);
+        Set<Integer> keyset = clientsReading.keySet();
+        for (Integer i : keyset) {
+            clientsReading.get(i).clear();
+            clientWriting.put(i, null);
         }
     }
-    
-    private void saveState(){
-    	ObjectOutputStream out;
-		try {
-			out = new ObjectOutputStream(new FileOutputStream("CoordImpl.ser"));
-	    	out.writeObject(this);
-	    	out.flush();
-	    	out.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+
+    private void saveState() {
+        ObjectOutputStream out;
+        try {
+            out = new ObjectOutputStream(new FileOutputStream("CoordImpl.ser"));
+            out.writeObject(this);
+            out.flush();
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
