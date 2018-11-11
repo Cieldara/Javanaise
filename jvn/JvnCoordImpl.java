@@ -33,7 +33,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     private Map<Integer, Set<JvnRemoteServer>> clientsReading;
     private Map<Integer, JvnRemoteServer> clientWriting;
     private Map<String, Boolean> objectExisting;
-    private transient final Object lock = new Object();
+    private final Integer lock = new Integer(5);
     private int termine = 0;
 
     /**
@@ -196,7 +196,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
         ArrayList<JvnRemoteServer> readerList = new ArrayList<>();
         synchronized (lock) {
             obj.jvnSetObjectState(ret);
-            //saveState();
+            saveState();
             Iterator<JvnRemoteServer> it = clientsReading.get(joi).iterator();
             while (it.hasNext()) {
                 JvnRemoteServer current = it.next();

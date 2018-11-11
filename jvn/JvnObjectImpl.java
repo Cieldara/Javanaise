@@ -13,13 +13,13 @@ public class JvnObjectImpl implements Remote, JvnObject {
     @Override
     public String read() {
         throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods, choose
-                                                                       // Tools | Templates.
+        // Tools | Templates.
     }
 
     @Override
     public void write(String s) {
         throw new UnsupportedOperationException("Not supported yet."); // To change body of generated methods, choose
-                                                                       // Tools | Templates.
+        // Tools | Templates.
     }
 
     public enum State {
@@ -37,44 +37,42 @@ public class JvnObjectImpl implements Remote, JvnObject {
     }
 
     public void jvnLockRead() throws JvnException {
-
         switch (state) {
-        case NL:
-            state = State.R;
-            obj = localServer.jvnLockRead(id);
+            case NL:
+                obj = localServer.jvnLockRead(id);
+                state = State.R;
 
-            break;
-        case RC:
-            state = State.R;
-            break;
-        case WC:
-            state = State.RWC;
-            break;
-        default:
-            break;
+                break;
+            case RC:
+                state = State.R;
+                break;
+            case WC:
+                state = State.RWC;
+                break;
+            default:
+                break;
         }
     }
 
     public void jvnLockWrite() throws JvnException {
         switch (state) {
-        case NL:
-        case RC:
-            state = State.W;
-            obj = localServer.jvnLockWrite(id);
-
-        default:
+            case NL:
+            case RC:
+                obj = localServer.jvnLockWrite(id);
+                state = State.W;
+            default:
         }
     }
 
     public synchronized void jvnUnLock() throws JvnException {
 
         switch (state) {
-        case W:
-            state = State.WC;
-            break;
-        case R:
-            state = State.RC;
-        default:
+            case W:
+                state = State.WC;
+                break;
+            case R:
+                state = State.RC;
+            default:
         }
         this.notifyAll();
     }
@@ -100,7 +98,7 @@ public class JvnObjectImpl implements Remote, JvnObject {
                 Logger.getLogger(JvnObjectImpl.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        
+
         state = State.NL;
     }
 
@@ -121,27 +119,28 @@ public class JvnObjectImpl implements Remote, JvnObject {
     @Override
     public synchronized Serializable jvnInvalidateWriterForReader() throws JvnException {
         switch (state) {
-        case W:
-            while (this.state == State.W) {
-                try {
-                    this.wait();
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(JvnObjectImpl.class.getName()).log(Level.SEVERE, null, ex);
+            case W:
+                while (this.state == State.W) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(JvnObjectImpl.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
-            }
-            state = State.RC;
-            break;
-        case WC:
-        case RWC:
-            state = State.RC;
-        default:
+                state = State.RC;
+                break;
+            case WC:
+            case RWC:
+                state = State.RC;
+            default:
         }
         return obj;
     }
 
     @Override
     public synchronized void jvnInvalidateFailure() {
-    	state = State.NL;
+        state = State.NL;
+        this.notifyAll();
     }
 
     public void setLocalServer(JvnLocalServer localServer) {
@@ -156,6 +155,5 @@ public class JvnObjectImpl implements Remote, JvnObject {
     public void resetState() {
         this.state = State.NL;
     }
-
 
 }
