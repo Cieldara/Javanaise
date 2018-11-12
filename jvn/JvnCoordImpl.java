@@ -140,23 +140,20 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
         JvnObject obj = null;
         Serializable ret = null;
-        JvnRemoteServer server = null;
         synchronized (lock) {
+            JvnRemoteServer server = null;
             obj = objects.get(joi);
             ret = obj.jvnGetObjectState();
             server = clientWriting.get(joi);
-        }
 
-        if (server != null) {
-            ret = server.jvnInvalidateWriterForReader(joi);
-            synchronized (lock) {
+            if (server != null) {
+                ret = server.jvnInvalidateWriterForReader(joi);
+
                 //Si le Writer récupéré est encore le même, le passer dans les readers, sinon ne rien faire
                 if (server.equals(clientWriting.get(joi))) {
                     clientsReading.get(joi).add(server);
                 }
             }
-        }
-        synchronized (lock) {
             obj.jvnSetObjectState(ret);
             saveState();
             clientsReading.get(joi).add(js);
@@ -175,26 +172,22 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *
      */
     public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-        JvnObject obj = null;
         Serializable ret = null;
-        JvnRemoteServer server = null;
         synchronized (lock) {
+            JvnObject obj = null;
+            JvnRemoteServer server = null;
             obj = objects.get(joi);
             ret = obj.jvnGetObjectState();
             server = clientWriting.get(joi);
-        }
 
-        if (server != null) {
-            ret = server.jvnInvalidateWriter(joi);
-            synchronized (lock) {
+            if (server != null) {
+                ret = server.jvnInvalidateWriter(joi);
+
                 if (server.equals(clientWriting.get(joi))) {
                     clientsReading.get(joi).add(server);
                 }
             }
-        }
-
-        ArrayList<JvnRemoteServer> readerList = new ArrayList<>();
-        synchronized (lock) {
+            ArrayList<JvnRemoteServer> readerList = new ArrayList<>();
             obj.jvnSetObjectState(ret);
             saveState();
             Iterator<JvnRemoteServer> it = clientsReading.get(joi).iterator();
@@ -204,18 +197,15 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
                     readerList.add(current);
                 }
             }
-        }
-
-        for (JvnRemoteServer s : readerList) {
-            s.jvnInvalidateReader(joi);
-        }
-
-        // Plus personne ne doit pouvoir être en mesure de lire
-        synchronized (lock) {
+            for (JvnRemoteServer s : readerList) {
+                s.jvnInvalidateReader(joi);
+            }
+            // Plus personne ne doit pouvoir être en mesure de lire
             clientsReading.get(joi).clear();
             clientWriting.put(joi, js);
         }
         return ret;
+
     }
 
     /**
@@ -250,7 +240,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 
     public void jvnInvalideFailure() throws JvnException {
         synchronized (lock) {
-            Set<JvnRemoteServer> clientsRemaining = new HashSet<>(); 
+            Set<JvnRemoteServer> clientsRemaining = new HashSet<>();
             for (JvnRemoteServer client : clients) {
                 Boolean connect = false;
                 for (int i = 0; i < 10 && !connect; i++) {

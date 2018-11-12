@@ -108,7 +108,6 @@ public class JvnObjectImpl implements Remote, JvnObject {
                 Logger.getLogger(JvnObjectImpl.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-
         state = State.NL;
     }
 

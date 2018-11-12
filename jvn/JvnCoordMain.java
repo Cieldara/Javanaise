@@ -13,14 +13,13 @@ public class JvnCoordMain {
         try {
             Registry registry = LocateRegistry.createRegistry(1099);
             JvnRemoteCoord coordImpl = null;
-            Boolean debug = true;
+            Boolean debug = false;
             if (debug) {
                 try {
                     ObjectInputStream in = new ObjectInputStream(new FileInputStream("CoordImpl.ser"));
                     coordImpl = (JvnCoordImpl) in.readObject();
                     in.close();
                 } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
                 }
             }
             if (coordImpl == null) {
