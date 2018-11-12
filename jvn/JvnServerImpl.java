@@ -151,7 +151,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      *
      */
     public Serializable jvnLockRead(int joi) throws JvnException {
-        Serializable obj = this.objects.get(joi);
+        Serializable obj = this.objects.get(joi).jvnGetObjectState();
         int connected = 0;
         while (connected < 10) {
             try {
@@ -184,7 +184,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      *
      */
     public Serializable jvnLockWrite(int joi) throws JvnException {
-        Serializable obj = this.objects.get(joi);
+        Serializable obj = this.objects.get(joi).jvnGetObjectState();
         int connected = 0;
         while (connected < 10) {
             try {
