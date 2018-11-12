@@ -249,24 +249,25 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     }
 
     public void jvnInvalideFailure() throws JvnException {
-        for (JvnRemoteServer client : clients) {
-            Boolean connect = false;
-            for (int i = 0; i < 10 && !connect; i++) {
-                try {
-                    client.jvnInvalidateFailure();
-                    connect = true;
-                } catch (RemoteException e) {
-                    e.printStackTrace();
+        synchronized (lock) {
+            Set<JvnRemoteServer> clientsRemaining = new HashSet<>(); 
+            for (JvnRemoteServer client : clients) {
+                Boolean connect = false;
+                for (int i = 0; i < 10 && !connect; i++) {
+                    try {
+                        client.jvnInvalidateFailure();
+                        connect = true;
+                        clientsRemaining.add(client);
+                    } catch (RemoteException e) {
+                    }
                 }
             }
-            if (!connect) {
-                clients.remove(client);
+            clients = clientsRemaining;
+            Set<Integer> keyset = clientsReading.keySet();
+            for (Integer i : keyset) {
+                clientsReading.get(i).clear();
+                clientWriting.put(i, null);
             }
-        }
-        Set<Integer> keyset = clientsReading.keySet();
-        for (Integer i : keyset) {
-            clientsReading.get(i).clear();
-            clientWriting.put(i, null);
         }
     }
 

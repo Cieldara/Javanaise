@@ -9,6 +9,7 @@ public class JvnObjectImpl implements Remote, JvnObject {
 
     private Serializable obj;
     private int id;
+    private boolean resetState;
 
     @Override
     public String read() {
@@ -34,9 +35,14 @@ public class JvnObjectImpl implements Remote, JvnObject {
         this.id = id;
         state = State.W;
         this.localServer = localServer;
+        this.resetState = false;
     }
 
     public void jvnLockRead() throws JvnException {
+        if (resetState) {
+            this.state = State.NL;
+            this.resetState = false;
+        }
         switch (state) {
             case NL:
                 obj = localServer.jvnLockRead(id);
@@ -55,6 +61,10 @@ public class JvnObjectImpl implements Remote, JvnObject {
     }
 
     public void jvnLockWrite() throws JvnException {
+        if (resetState) {
+            this.state = State.NL;
+            this.resetState = false;
+        }
         switch (state) {
             case NL:
             case RC:
@@ -139,7 +149,8 @@ public class JvnObjectImpl implements Remote, JvnObject {
 
     @Override
     public synchronized void jvnInvalidateFailure() {
-        state = State.NL;
+        this.resetState = true;
+        this.state = State.NL;
         this.notifyAll();
     }
 

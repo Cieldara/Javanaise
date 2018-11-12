@@ -11,8 +11,9 @@ public class JvnCoordMain {
     public static void main(String[] args) {
 
         try {
+            Registry registry = LocateRegistry.createRegistry(1099);
             JvnRemoteCoord coordImpl = null;
-            Boolean debug = false;
+            Boolean debug = true;
             if (debug) {
                 try {
                     ObjectInputStream in = new ObjectInputStream(new FileInputStream("CoordImpl.ser"));
@@ -27,7 +28,7 @@ public class JvnCoordMain {
             } else {
                 ((JvnCoordImpl) coordImpl).jvnInvalideFailure();
             }
-            Registry registry = LocateRegistry.createRegistry(1099);
+            
             registry.bind("RemoteCoord", coordImpl);
             System.out.println("Coord ready");
 
