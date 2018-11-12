@@ -13,7 +13,7 @@ public class JvnCoordMain {
         try {
             Registry registry = LocateRegistry.createRegistry(1099);
             JvnRemoteCoord coordImpl = null;
-            Boolean debug = false;
+            Boolean debug = true;
             if (debug) {
                 try {
                     ObjectInputStream in = new ObjectInputStream(new FileInputStream("CoordImpl.ser"));

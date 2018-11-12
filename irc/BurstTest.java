@@ -34,7 +34,7 @@ public class BurstTest {
             jo.jvnUnLock();
             js.jvnRegisterObject("IRC", jo);
         }
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             Integer entier = Integer.parseInt(jo.read());
             System.out.println(id + ":" + (entier++));
             jo.write(entier.toString());

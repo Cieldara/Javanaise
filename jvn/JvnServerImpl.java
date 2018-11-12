@@ -99,7 +99,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
         JvnObject object = (JvnObject) Proxy.newProxyInstance(JvnObject.class.getClassLoader(),new Class[] { JvnObject.class }, handler);
 
         
-        objects.put(obj.jvnGetObjectId(), obj);
+        objects.put(obj.jvnGetObjectId(), object);
         return object;
     }
 
@@ -151,14 +151,15 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      *
      */
     public Serializable jvnLockRead(int joi) throws JvnException {
-        Serializable obj = null;
-        boolean connected = false;
-        while (!connected) {
+        Serializable obj = this.objects.get(joi);
+        int connected = 0;
+        while (connected < 10) {
             try {
                 obj = coord.jvnLockRead(joi, this);
-                connected = true;
+                connected = 11;
             } catch (RemoteException e) {
                 //e.printStackTrace();
+                connected++;
                 connectToCoord();
             }
         }
@@ -170,7 +171,6 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
             Registry registry = LocateRegistry.getRegistry(1099);
             coord = (JvnRemoteCoord) registry.lookup("RemoteCoord");
         } catch (RemoteException | NotBoundException e) {
-            e.printStackTrace();
         }
 
     }
@@ -184,14 +184,15 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      *
      */
     public Serializable jvnLockWrite(int joi) throws JvnException {
-        Serializable obj = null;
-        boolean connected = false;
-        while (!connected) {
+        Serializable obj = this.objects.get(joi);
+        int connected = 0;
+        while (connected < 10) {
             try {
                 obj = coord.jvnLockWrite(joi, this);
-                connected = true;
+                connected = 11;
             } catch (RemoteException e) {
                 //e.printStackTrace();
+                connected++;
                 connectToCoord();
             }
         }
