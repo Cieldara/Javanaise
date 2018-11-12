@@ -28,15 +28,13 @@ public class BurstTest {
         if(args.length >= 1){
             id = Integer.parseInt(args[0]);
         }
-        System.out.println("la");
         if (jo == null) {
             jo = js.jvnCreateObject((Serializable) new Sentence());
             // after creation, I have a write lock on the object
             jo.jvnUnLock();
             js.jvnRegisterObject("IRC", jo);
         }
-System.out.println("la");
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             Integer entier = Integer.parseInt(jo.read());
             System.out.println(id + ":" + (entier++));
             jo.write(entier.toString());
