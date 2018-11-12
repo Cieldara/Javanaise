@@ -39,7 +39,6 @@ public class JvnObjectImpl implements Remote, JvnObject {
     }
 
     public void jvnLockRead() throws JvnException {
-        System.out.println(this.state);
         if (resetState) {
             this.state = State.NL;
             this.resetState = false;
@@ -62,7 +61,6 @@ public class JvnObjectImpl implements Remote, JvnObject {
     }
 
     public void jvnLockWrite() throws JvnException {
-        System.out.println(this.state);
         if (resetState) {
             this.state = State.NL;
             this.resetState = false;
